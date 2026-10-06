@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Money Quest V2 - Fixed Borrow</title>
+<link href="https://fonts.googleapis.com/css2?family=Gaegu:wght@700&family=Patrick+Hand:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:'Patrick Hand',cursive;background:linear-gradient(135deg,#8ed8ff,#c9a7ff,#ffb6dc);color:#20264d;min-height:100vh}
+.app{max-width:1250px;margin:auto;padding:20px}
+.hud{position:sticky;top:10px;z-index:1000;display:flex;justify-content:space-between;gap:10px;padding:12px 18px;background:rgba(255,255,255,.94);border:4px solid #20264d;border-radius:22px;box-shadow:0 7px 0 #20264d}
+.hud-item{background:#fff6a8;border:3px solid #20264d;padding:8px 15px;border-radius:15px;font-weight:bold;box-shadow:0 4px 0 #20264d}
+.screen{margin-top:25px;background:rgba(255,255,255,.94);border-radius:30px;border:5px solid #20264d;padding:35px;box-shadow:0 10px 0 #20264d}
+.hidden{display:none!important}
+h1{font-family:'Gaegu';font-size:clamp(40px,7vw,80px);margin:5px 0;color:#6c4cff;text-shadow:4px 4px 0 #20264d}
+h2{font-family:'Gaegu';font-size:clamp(28px,4vw,42px)}h3{font-size:24px}p{font-size:19px;line-height:1.55}.center{text-align:center}
+.character{width:120px;height:120px;margin:20px auto;border-radius:25px;background:#ffd85e;border:5px solid #20264d;display:flex;align-items:center;justify-content:center;font-size:70px;box-shadow:0 8px 0 #20264d;animation:float 2s infinite}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+.game-btn{border:4px solid #20264d;border-radius:18px;padding:12px 22px;font-size:18px;font-weight:bold;margin:7px;box-shadow:0 6px 0 #20264d;transition:.15s;cursor:pointer;font-family:'Patrick Hand'}
+.blue{background:#69c9ff}.purple{background:#b49aff}.pink{background:#ff9dcc}.yellow{background:#ffe066}.green{background:#83e6b5}.red{background:#ff8e8e}
+.portal-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:22px;margin-top:30px}
+.portal{border:5px solid #20264d;border-radius:30px;padding:25px;min-height:230px;display:flex;flex-direction:column;justify-content:space-between;text-align:center;box-shadow:0 9px 0 #20264d}
+.note-card{background:#fffdf0;border:4px solid #20264d;border-radius:22px;padding:25px;margin:20px 0;box-shadow:0 6px 0 #20264d}
+.quiz-card{background:linear-gradient(135deg,#fff,#f1edff);border:5px solid #20264d;border-radius:28px;padding:28px;margin-top:25px;box-shadow:0 8px 0 #20264d}
+.answer-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:15px;margin-top:20px}
+.answer-btn{padding:18px;font-size:20px;font-weight:bold;border-radius:18px;border:4px solid #20264d;background:#9de8ff;box-shadow:0 6px 0 #20264d;cursor:pointer}
+.feedback{text-align:center;font-size:22px;font-weight:bold;min-height:35px;margin-top:10px}
+.progress-container{margin:20px 0}.progress-bar{height:25px;border-radius:20px;border:3px solid #20264d;overflow:hidden;background:white}.progress-fill{height:100%;width:0%;background:linear-gradient(90deg,#69c9ff,#b49aff,#ff9dcc);transition:width.5s}
+.column-area{max-width:520px;margin:20px auto;background:#fff;border:4px solid #20264d;border-radius:24px;padding:20px;box-shadow:0 8px 0 #20264d}
+.carry-row{display:flex;justify-content:flex-end;gap:8px;min-height:32px;margin-bottom:4px}
+.carry-box{width:52px;height:28px;text-align:center;font-weight:bold;color:#ff2d55;font-size:20px;position:relative}
+.num-row{display:flex;justify-content:flex-end;gap:8px;align-items:center;margin:4px 0;font-size:32px;font-weight:bold}
+.num-digit{width:52px;height:52px;display:flex;align-items:center;justify-content:center;border:3px solid #20264d;border-radius:14px;background:#fff6a8;cursor:pointer;user-select:none}
+.operator{width:30px;text-align:center}
+.column-line{border-top:4px solid #20264d;margin:12px 0}
+.answer-row{display:flex;justify-content:flex-end;gap:8px;flex-wrap:wrap;align-items:flex-end}
+.digit-blank{width:52px;height:52px;border:4px dashed #6c4cff;border-radius:14px;background:#e8e0ff;font-size:28px;font-weight:bold;cursor:pointer;transition:.2s;position:relative;display:flex;align-items:center;justify-content:center}
+.digit-blank.filled{background:#b49aff;border-style:solid;color:#fff;box-shadow:0 4px 0 #20264d}
+.digit-blank.correct{background:#83e6b5!important;border-color:#20264d;color:#20264d}
+.column-hint{font-size:14px;text-align:center;color:#a24e6e;margin-top:8px;min-height:20px}
+.method-area{margin-top:25px;padding:25px;border-radius:25px;background:#eee8ff;border:4px solid #20264d}
+.dot-box{width:18px;height:52px;display:flex;align-items:center;justify-content:center;font-size:32px;font-weight:bold}
+.empty-box{width:52px;height:52px;visibility:hidden}
+.carry-bubble{display:none;position:absolute;bottom:0;left:50%;transform:translateX(-50%);background:#ff8fab;border:3px solid #20264d;border-radius:12px;padding:2px 10px;font-size:18px;color:#fff;font-family:'Gaegu';box-shadow:0 3px 0 #20264d}
+.carry-bubble.show{display:block}
+.carry-label{position:absolute;top:-32px;left:50%;transform:translateX(-50%);font-size:11px;background:#20264d;color:#fff;padding:4px 8px;border-radius:10px;white-space:nowrap;font-family:'Patrick Hand';z-index:10}
+.split-wrap{display:flex;gap:4px;position:relative;align-items:flex-end}
+.tap-one-label{position:absolute;top:-28px;left:0;font-size:11px;background:#20264d;color:#fff;padding:3px 7px;border-radius:10px;white-space:nowrap;z-index:10}
+.fly{position:fixed;z-index:9999;background:#ffe066;border:4px solid #20264d;border-radius:14px;width:52px;height:52px;display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:bold;color:#20264d;box-shadow:0 4px 0 #20264d;transition:all.6s cubic-bezier(.68,-.55,.27,1.55);pointer-events:none}
+.mul-money-box{width:62px;height:56px;border:4px dashed #6c4cff;border-radius:14px;background:#e8e0ff;font-size:22px;font-weight:bold;display:flex;align-items:center;justify-content:center;cursor:pointer}
+.mul-money-box.filled{background:#b49aff;border-style:solid;color:#fff;box-shadow:0 4px 0 #20264d}
+.mul-money-box.correct{background:#83e6b5!important}
+.visual-dashed{min-height:120px;border:3px dashed #20264d;border-radius:20px;padding:15px;display:flex;flex-wrap:wrap;gap:10px;background:white;margin:12px 0;justify-content:center;align-items:center}
+.visual-chip{min-width:90px;padding:12px;border-radius:14px;border:3px solid #20264d;background:#a6e3ff;font-weight:bold;text-align:center;box-shadow:0 4px 0 #20264d}
+.combined-btn{padding:14px 22px;border-radius:18px;border:4px solid #20264d;background:#ffe066;font-weight:bold;font-size:20px;box-shadow:0 5px 0 #20264d;cursor:pointer}
+.mul-input-row{display:flex;gap:6px;align-items:center;justify-content:center;flex-wrap:wrap;margin:10px 0}
+.boss-input{width:95px;padding:10px;border:4px solid #20264d;border-radius:14px;font-size:16px;font-weight:bold;text-align:center;font-family:'Patrick Hand'}
+.boss-workspace{margin-top:15px;padding:20px;background:white;border:4px solid #20264d;border-radius:22px}
+</style>
+</head>
+<body>
+<div class="app">
+<div class="hud"><div class="hud-item">🪙 <span id="gameCoins">0</span></div><div class="hud-item">🏆 Lv <span id="levelNumber">1</span>/3</div><div class="hud-item">⭐ <span id="score">0</span></div></div>
+<section id="home" class="screen"><div class="character">🧑‍🚀</div><div class="center"><p>YEAR 2 MATHEMATICS</p><h1>MONEY QUEST</h1><p>💰 4.0 MONEY 💰</p><button class="game-btn green" onclick="showScreen('map')">▶ START QUEST</button></div></section>
+<section id="map" class="screen hidden"><h2 class="center">🗺️ MONEY QUEST MAP</h2><div class="portal-grid">
+<div class="portal" style="background:#c9f5ff;"><div style="font-size:65px">🛒</div><h2>LEVEL 1</h2><h3>SP 4.2.1</h3><p>ADD with sen</p><button class="game-btn blue" onclick="startSP(1)">ENTER</button></div>
+<div class="portal" style="background:#d8ffc9;"><div style="font-size:65px">💰</div><h2>LEVEL 2</h2><h3>SP 4.3.1</h3><p>SUBTRACT with sen</p><button class="game-btn green" onclick="startSP(2)">ENTER</button></div>
+<div class="portal" style="background:#ead7ff;"><div style="font-size:65px">🛍️</div><h2>LEVEL 3</h2><h3>SP 4.4.1</h3><p>MULTIPLY</p><button class="game-btn purple" onclick="startSP(3)">ENTER</button></div>
+</div><div class="progress-container"><p>Quest Progress</p><div class="progress-bar"><div id="progressFill" class="progress-fill"></div></div></div>
+<button class="game-btn pink" onclick="showScreen('finalBoss');initFinalBoss()">👑 FINAL BOSS</button>
+</section>
+<section id="sp1" class="screen hidden">
+<h2>🟢 LEVEL 1 — ADD with sen</h2>
+<div class="note-card"><h3>📖 How to ADD?</h3><p>Tap <b>?</b> → 0️⃣1️⃣2️⃣... If 12 → tap 1 → It will move here ⬆️</p></div>
+<div class="quiz-card"><h2 id="sp1QuestionTitle"></h2><div id="sp1QuestionText" style="font-size:24px;text-align:center;font-weight:bold;margin:15px 0"></div>
+<div class="method-area"><h3 class="center">✏️ CUTE COLUMN METHOD</h3><div id="addColumnArea"></div><p id="addColumnFeedback" class="feedback"></p></div>
+<div class="answer-grid" id="sp1Answers"></div><p id="addQuizFeedback" class="feedback"></p>
+<div class="center" style="margin-top:15px"><button class="game-btn yellow" onclick="nextSPQuestion(1)">➡️ NEXT</button> <button class="game-btn green" onclick="showSPCompleteOptions(1)">🏁 FINISH</button></div>
+</div>
+</section>
+<section id="sp2" class="screen hidden">
+<h2>🔵 LEVEL 2 — SUBTRACT with sen</h2>
+<div class="note-card"><h3>📖 How to SUBTRACT?</h3><p>Tap <b>?</b> counts DOWN: 6️⃣→5️⃣→4️⃣... If top smaller, tap LEFT yellow number to borrow!</p></div>
+<div class="quiz-card"><h2 id="sp2QuestionTitle"></h2><div id="sp2QuestionText" style="font-size:24px;text-align:center;font-weight:bold;margin:15px 0"></div>
+<div class="method-area"><h3 class="center">✏️ CUTE COLUMN METHOD</h3><div id="subColumnArea"></div><p id="subColumnFeedback" class="feedback"></p></div>
+<div class="answer-grid" id="sp2Answers"></div><p id="subQuizFeedback" class="feedback"></p>
+<div class="center" style="margin-top:15px"><button class="game-btn yellow" onclick="nextSPQuestion(2)">➡️ NEXT</button> <button class="game-btn green" onclick="showSPCompleteOptions(2)">🏁 FINISH</button></div>
+</div>
+</section>
+<section id="sp3" class="screen hidden">
+<h2>🟣 LEVEL 3 — MULTIPLY</h2>
+<div class="quiz-card"><h2 id="sp3QuestionTitle"></h2><div id="sp3QuestionText" style="font-size:24px;text-align:center;font-weight:bold;margin:15px 0"></div>
+<div class="method-area"><div id="mulColumnArea"></div><p id="mulColumnFeedback" class="feedback"></p></div>
+<div class="answer-grid" id="sp3Answers"></div><p id="mulQuizFeedback" class="feedback"></p>
+<div class="center" style="margin-top:15px"><button class="game-btn yellow" onclick="nextSPQuestion(3)">➡️ NEXT</button> <button class="game-btn green" onclick="showSPCompleteOptions(3)">🏁 FINISH</button></div>
+</div>
+</section>
+<section id="finalBoss" class="screen hidden">
+<div style="text-align:center">
+<h1>👑 FINAL BOSS</h1>
+<h2 id="finalQuestionText" style="font-size:20px"></h2>
+<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin:12px 0">
+<button class="game-btn blue" onclick="bossShowWorkspace('add')">➕ ADD</button>
+<button class="game-btn green" onclick="bossShowWorkspace('sub')">➖ SUB</button>
+<button class="game-btn purple" onclick="bossShowWorkspace('mul')">✖️ MUL</button>
+</div>
+<div id="bossWorkspace" class="boss-workspace hidden">
+<div id="bossAddArea"></div>
+<div id="bossSubArea"></div>
+<div id="bossMulArea"></div>
+</div>
+<h3>💰 Choose Answer</h3>
+<div class="answer-grid" id="finalAnswers"></div>
+<p id="finalFeedback" class="feedback"></p>
+<div style="margin-top:15px"><button class="game-btn purple" onclick="nextFinalQuestion()">➡️ NEXT BOSS</button> <button class="game-btn pink" onclick="showScreen('map')">🗺️ MAP</button></div>
+</div>
+</section>
+</div>
+<script>
+let coins=0,score=0,completedLevels=[];
+let currentQs={1:[],2:[],3:[]}, currentIndex={1:0,2:0,3:0};
+function showScreen(id){document.querySelectorAll(".screen").forEach(s=>s.classList.add("hidden"));document.getElementById(id).classList.remove("hidden");window.scrollTo({top:0,behavior:"smooth"})}
+function startSP(l){document.getElementById("levelNumber").textContent=l; generateQuestions(l); currentIndex[l]=0; showQuestion(l); showScreen('sp'+l)}
+function addCoins(a){coins+=a;document.getElementById("gameCoins").textContent=coins}
+function addScore(a){score+=a;document.getElementById("score").textContent=score}
+function updateProgress(){document.getElementById("progressFill").style.width=(completedLevels.length/3*100)+"%"}
+function generateQuestions(level){
+ let qs=[];
+ for(let i=0;i<20;i++){
+  if(level==1){
+    let rm1=Math.floor(Math.random()*60)+5; let sen1=[0,10,20,25,30,50,60,75,80,90][Math.floor(Math.random()*10)];
+    let rm2=Math.floor(Math.random()*40)+2; let sen2=[0,10,25,50,75,90][Math.floor(Math.random()*6)];
+    let a=rm1+sen1/100, b=rm2+sen2/100;
+    qs.push({a,b,ans:+(a+b).toFixed(2), text:`RM${a.toFixed(2)} + RM${b.toFixed(2)} =? 💰`})
+  }
+  if(level==2){
+    let rm1=Math.floor(Math.random()*70)+20; let sen1=[0,10,20,25,50,60,75,90][Math.floor(Math.random()*8)];
+    let rm2=Math.floor(Math.random()*30)+5; let sen2=[0,15,25,35,50,75][Math.floor(Math.random()*6)];
+    let a=rm1+sen1/100, b=rm2+sen2/100; if(b>=a) a=b+10+Math.random()*10;
+    qs.push({a,b,ans:+(a-b).toFixed(2), text:`RM${a.toFixed(2)} - RM${b.toFixed(2)} =? 🛒`})
+  }
+  if(level==3){
+    let rm=Math.floor(Math.random()*4)+1; let sen=[0,10,20,25,30,50,60,70,75,80,90][Math.floor(Math.random()*11)];
+    let price=rm+sen/100; let qty=Math.floor(Math.random()*4)+2;
+    qs.push({a:price,b:qty,ans:+(price*qty).toFixed(2),text:`One pen RM${price.toFixed(2)} x ${qty} =? 🖊️`})
+  }
+ }
+ currentQs[level]=qs;
+}
+function showQuestion(level){
+ let q=currentQs[level][currentIndex[level]];
+ document.getElementById(`sp${level}QuestionTitle`).textContent=`⚡ QUESTION ${currentIndex[level]+1} / 3`;
+ document.getElementById(`sp${level}QuestionText`).textContent=q.text;
+ let ansDiv=document.getElementById(`sp${level}Answers`); ansDiv.innerHTML='';
+ let opts=[q.ans, +(q.ans+2.5).toFixed(2), +(q.ans-1.75).toFixed(2)].filter(x=>x>=0).sort(()=>Math.random()-0.5);
+ opts.forEach(o=>{let b=document.createElement('button');b.className='answer-btn';b.textContent='RM'+o.toFixed(2);b.onclick=()=>checkMCQ(level,Math.abs(o-q.ans)<0.01);ansDiv.appendChild(b)});
+ if(level==1) renderAddColumn(q.a,q.b);
+ if(level==2) renderSubColumn(q.a,q.b);
+ if(level==3) renderMulColumn(q.a,q.b);
+}
+function nextSPQuestion(level){ currentIndex[level]++; if(currentIndex[level]>=3){ showSPCompleteOptions(level); return; } showQuestion(level); }
+function showSPCompleteOptions(level){
+ if(confirm(`Finished 3! OK=MORE Cancel=MAP`)){
+   currentIndex[level]=0; generateQuestions(level); showQuestion(level);
+ } else {
+   if(!completedLevels.includes(level)){completedLevels.push(level); addCoins(10); addScore(100); updateProgress();}
+   showScreen('map');
+ }
+}
+function checkMCQ(level,correct){
+ let fb=document.getElementById(level==1?'addQuizFeedback':level==2?'subQuizFeedback':'mulQuizFeedback');
+ if(correct){fb.textContent='🎉 CORRECT! +5 coins!'; addCoins(5); addScore(25);} else {fb.textContent='💡 Try again! Use column! 🌸'}
+}
+function renderAddColumn(a,b){
+ let container=document.getElementById('addColumnArea');
+ let aF=parseFloat(a).toFixed(2), bF=parseFloat(b).toFixed(2);
+ let len=Math.max(aF.length,bF.length);
+ let aS=aF.padStart(len,' '), bS=bF.padStart(len,' ');
+ let raw=[]; let carry=0;
+ for(let i=len-1;i>=0;i--){
+   if(aS[i]=='.'||bS[i]=='.'){ raw[i]='.'; continue; }
+   if(aS[i]==' '&&bS[i]==' '){ raw[i]=' '; continue; }
+   let da=(aS[i]!==' '&&aS[i]!=='.')?parseInt(aS[i])||0:0;
+   let db=(bS[i]!==' '&&bS[i]!=='.')?parseInt(bS[i])||0:0;
+   let s=da+db+carry; raw[i]=s; carry=Math.floor(s/10);
+ }
+ let html=`<div class="column-area"><div class="carry-row">`;
+ for(let i=0;i<len;i++) html+=`<div class="carry-box"><div class="carry-bubble" id="cbub-${i}"></div></div>`;
+ html+=`</div><div class="num-row"><div class="operator"></div>`;
+ for(let i=0;i<len;i++){ let ch=aS[i].trim(); if(ch=='') html+=`<div class="empty-box"></div>`; else if(ch=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${ch}</div>` }
+ html+=`</div><div class="num-row"><div class="operator">+</div>`;
+ for(let i=0;i<len;i++){ let ch=bS[i].trim(); if(ch=='') html+=`<div class="empty-box"></div>`; else if(ch=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${ch}</div>` }
+ html+=`</div><div class="column-line"></div><div class="answer-row">`;
+ for(let i=0;i<len;i++){
+   if(aS[i]==' '&&bS[i]==' ') html+=`<div class="empty-box"></div>`;
+   else if(aS[i]=='.'||bS[i]=='.') html+=`<div class="dot-box">.</div>`;
+   else html+=`<button class="digit-blank" id="ans-${i}" data-cur="-1" onclick="cycleAdd(${a},${b},${i},${len})">?</button>`;
+ }
+ html+=`</div><div class="column-hint" id="add-hint">Tap? → with sen!</div></div>`;
+ container.innerHTML=html;
+ container._raw=raw; container._aStr=aS; container._a=a; container._b=b;
+}
+function cycleAdd(a,b,col,len){
+ let container=document.getElementById('addColumnArea');
+ let raw=container._raw[col];
+ if(raw=='.'||raw==' ') return;
+ let btn=document.getElementById(`ans-${col}`);
+ if(!btn) return;
+ if(raw===0){
+   btn.textContent='0';
+   btn.classList.add('filled','correct');
+   document.getElementById('add-hint').textContent=`0+0=0! ✨`;
+   let allDone=true;
+   for(let k=0;k<len;k++){
+     if(container._raw[k]=='.'||container._raw[k]==' ') continue;
+     let bb=document.getElementById(`ans-${k}`);
+     if(bb && bb.textContent=='?'){ allDone=false; break; }
+     let sp=document.getElementById(`split-${k}`);
+     if(sp && sp.querySelector('#ans-'+k+'-carry')){ allDone=false; break; }
+   }
+   if(allDone){ document.getElementById('addColumnFeedback').textContent=`🎉 RM${parseFloat(a).toFixed(2)}+RM${parseFloat(b).toFixed(2)}=RM${(parseFloat(a)+parseFloat(b)).toFixed(2)}!`; addCoins(3); addScore(15); }
+   return;
+ }
+ let cur=parseInt(btn.dataset.cur); if(isNaN(cur)) cur=-1; cur++;
+ if(cur>raw) cur=0;
+ btn.dataset.cur=cur; btn.textContent=cur; btn.classList.add('filled');
+ document.getElementById('add-hint').textContent=`Counting ${cur}/${raw}`;
+ if(cur==raw){
+   if(raw<10){
+     btn.classList.add('correct');
+     let allDone=true;
+     for(let k=0;k<len;k++){
+       if(container._raw[k]=='.'||container._raw[k]==' ') continue;
+       let bb=document.getElementById(`ans-${k}`);
+       if(bb &&!bb.classList.contains('correct') && bb.textContent=='?'){ allDone=false; break; }
+       let sp=document.getElementById(`split-${k}`);
+       if(sp &&!sp.querySelector('.correct')){ allDone=false; break; }
+     }
+     if(allDone){ document.getElementById('addColumnFeedback').textContent=`🎉 RM${parseFloat(a).toFixed(2)}+RM${parseFloat(b).toFixed(2)}=RM${(parseFloat(a)+parseFloat(b)).toFixed(2)}!`; addCoins(3); addScore(15); }
+   } else {
+     let isLeftmost = (col==0);
+     if(isLeftmost){
+       btn.outerHTML=`<div class="split-wrap" id="split-${col}"><div class="tap-one-label">Tap 1 to make 10</div><button class="digit-blank filled correct" id="ans-${col}-carry" onclick="keepTen(${a},${b},${col},event)" style="background:#ffe066;">1</button><button class="digit-blank filled correct" style="background:#83e6b5;">${raw%10}</button></div>`;
+       document.getElementById('add-hint').innerHTML=`You got <b>${raw}</b>! Tap 1 to keep as 10 (not fly)`;
+     } else {
+       btn.outerHTML=`<div class="split-wrap" id="split-${col}"><div class="tap-one-label">If you tap 1</div><button class="digit-blank filled" id="ans-${col}-carry" onclick="flyCarry(${a},${b},${col},${len},event)" style="background:#ffe066;">1</button><button class="digit-blank filled correct">${raw%10}</button></div>`;
+       let bub=document.getElementById(`cbub-${col-1}`); if(bub){ bub.innerHTML=`<div class="carry-label">It will move here</div>1`; bub.classList.add('show'); }
+     }
+   }
+ }
+}
+function keepTen(a,b,col,ev){
+ ev.stopPropagation();
+ let split=document.getElementById(`split-${col}`);
+ if(split){
+   split.innerHTML=`<button class="digit-blank filled correct" style="background:#83e6b5;">1</button><button class="digit-blank filled correct" style="background:#83e6b5;">0</button>`;
+ }
+ document.getElementById('add-hint').textContent=`Great! 10 kept! ✨`;
+ document.getElementById('addColumnFeedback').textContent=`🎉 RM${parseFloat(a).toFixed(2)}+RM${parseFloat(b).toFixed(2)}=RM${(parseFloat(a)+parseFloat(b)).toFixed(2)}!`;
+ addCoins(3); addScore(15);
+}
+function flyCarry(a,b,col,len,ev){
+ ev.stopPropagation();
+ let container=document.getElementById('addColumnArea');
+ let target=document.getElementById(`cbub-${col-1}`);
+ if(!target) return;
+ let rect=document.getElementById(`ans-${col}-carry`).getBoundingClientRect();
+ let fly=document.createElement('div'); fly.className='fly'; fly.textContent='1'; fly.style.left=rect.left+'px'; fly.style.top=rect.top+'px'; document.body.appendChild(fly);
+ let tRect=target.getBoundingClientRect();
+ setTimeout(()=>{ fly.style.left=tRect.left+'px'; fly.style.top=tRect.top+'px'; },50);
+ setTimeout(()=>{ fly.remove(); target.innerHTML='1'; target.classList.add('show'); document.getElementById(`split-${col}`).innerHTML=`<button class="digit-blank filled correct" style="background:#83e6b5;">${container._raw[col]%10}</button>`; addCoins(3); addScore(15); },600);
+}
+function renderSubColumn(a,b){
+ let container=document.getElementById('subColumnArea');
+ let aF=parseFloat(a).toFixed(2), bF=parseFloat(b).toFixed(2);
+ let len=Math.max(aF.length,bF.length);
+ let aS=aF.padStart(len,'0'), bS=bF.padStart(len,'0');
+ let html=`<div class="column-area"><div class="carry-row">`;
+ for(let i=0;i<len;i++) html+=`<div class="carry-box" id="sub-carry-${i}"></div>`;
+ html+=`</div><div class="num-row"><div class="operator"></div>`;
+ for(let i=0;i<len;i++){ if(aS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit" id="top-${i}" onclick="tryBorrow(${a},${b},${i},${len})">${aS[i]}</div>`; }
+ html+=`</div><div class="num-row"><div class="operator">-</div>`;
+ for(let i=0;i<len;i++){ if(bS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${bS[i]}</div>`; }
+ html+=`</div><div class="column-line"></div><div class="answer-row">`;
+ for(let i=0;i<len;i++){ if(aS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<button class="digit-blank" id="sub-ans-${i}" data-val="-1" onclick="cycleSub(${a},${b},${i},${len})">?</button>`; }
+ html+=`</div><div class="column-hint" id="sub-hint">If top smaller, tap LEFT yellow to borrow!</div></div>`;
+ container.innerHTML=html;
+ container._aStr=aS;
+ container._aDigits=aS.split('').map(x=> x=='.'? -1 : parseInt(x));
+ container._bDigits=bS.split('').map(x=> x=='.'? -1 : parseInt(x));
+ container._len=len;
+}
+function tryBorrow(a,b,col,len){
+ if(col>=len) return;
+ let container=document.getElementById('subColumnArea');
+ let aDigits=container._aDigits;
+ let aStr=container._aStr;
+ if(aDigits[col]==-1) return;
+ let left=col-1;
+ while(left>=0 && aStr[left]=='.') left--;
+ if(left<0) return;
+ let source=left;
+ while(source>=0){
+   if(aStr[source]=='.'){ source--; continue; }
+   if(aDigits[source]>0) break;
+   source--;
+ }
+ if(source<0) return;
+ if(!confirm(`Borrow 1 from ${aDigits[source]}? It will become ${aDigits[source]-1} and next +10! Borrow?`)) return;
+ aDigits[source]--;
+ document.getElementById(`top-${source}`).textContent=aDigits[source];
+ document.getElementById(`sub-carry-${source}`).textContent=`-1`;
+ for(let k=source+1;k<col;k++){
+   if(aStr[k]=='.') continue;
+   if(aDigits[k]==0){
+     aDigits[k]=9;
+     let el=document.getElementById(`top-${k}`);
+     if(el) el.textContent=9;
+   }
+ }
+ aDigits[col]+=10;
+ document.getElementById(`top-${col}`).textContent=aDigits[col];
+ document.getElementById('sub-hint').textContent=`Borrowed! ✨ Now subtract!`;
+ container._aDigits=aDigits;
+}
+function cycleSub(a,b,col,len){
+ let btn=document.getElementById(`sub-ans-${col}`);
+ let container=document.getElementById('subColumnArea');
+ if(container._aDigits[col]==-1) return;
+ let top=container._aDigits[col], bot=container._bDigits[col];
+ let cur=parseInt(btn.dataset.val); if(btn.textContent=='?') cur=top; else cur--; if(cur<0) cur=9;
+ btn.dataset.val=cur; btn.textContent=cur; btn.classList.add('filled');
+ let exp=top-bot;
+ if(exp<0){ document.getElementById('sub-hint').textContent=`${top} < ${bot}! Borrow LEFT!`; return; }
+ if(cur==exp){
+   btn.classList.add('correct');
+   document.getElementById('sub-hint').textContent=`Nice! ${top}-${bot}=${cur} 🎉`;
+   let all=true; for(let i=0;i<container._len;i++){ if(container._aStr[i]=='.') continue; let bb=document.getElementById(`sub-ans-${i}`); if(!bb||!bb.classList.contains('correct')){ all=false; break; } }
+   if(all){ document.getElementById('subColumnFeedback').textContent=`🎉 RM${parseFloat(a).toFixed(2)}-RM${parseFloat(b).toFixed(2)}=RM${(parseFloat(a)-parseFloat(b)).toFixed(2)}!`; addCoins(3); addScore(15); }
+ }
+}
+function renderMulColumn(a,b){
+ let container=document.getElementById('mulColumnArea');
+ let aFixed=parseFloat(a).toFixed(2);
+ let rmPart=aFixed.split('.')[0]; let senPart=aFixed.split('.')[1];
+ container._a=a; container._b=b; container._aFixed=aFixed; container._rm=rmPart; container._sen=senPart; container._combined=false; container._count=0;
+ container.innerHTML=`<div class="column-area" style="max-width:560px"><div style="text-align:center"><h3>RM${aFixed} × ${b}</h3></div><div id="mulStep1" class="note-card" style="margin:12px 0;background:#fff8e8;padding:15px"><h3>Step 1: Masukkan Nilai</h3><div class="mul-input-row"><span>RM</span><button class="mul-money-box" id="rmInput" data-val="-1" onclick="cycleMulInput('rm')">?</button><span>.</span><button class="mul-money-box" id="senInput1" data-val="-1" onclick="cycleMulInput('sen1')">?</button><button class="mul-money-box" id="senInput2" data-val="-1" onclick="cycleMulInput('sen2')">?</button><span>sen</span></div><div id="mulCombineArea" class="center" style="min-height:60px;margin-top:10px"></div><p id="mulStep1Hint" class="column-hint">Set RM${rmPart} and ${senPart} sen!</p></div><div id="mulStep2" class="hidden"><div style="background:white;border:3px solid #20264d;border-radius:18px;padding:15px"><h3>🪙 VISUAL</h3><div class="center"><button class="game-btn green" onclick="addVisualMoney()">+ RM${aFixed}</button></div><div class="visual-dashed" id="visualBox"></div><h3>Total: RM<span id="visualTotal">0.00</span></h3><div class="center"><button class="game-btn yellow" onclick="checkVisualTotal()">CHECK</button><button class="game-btn red" onclick="clearVisual()">CLEAR</button></div></div></div></div>`;
+}
+function cycleMulInput(type){ let c=document.getElementById('mulColumnArea'); let id=type=='rm'?'rmInput':type=='sen1'?'senInput1':'senInput2'; let btn=document.getElementById(id); let cur=parseInt(btn.dataset.val); cur=(cur+1)%10; if(btn.textContent=='?') cur=0; btn.dataset.val=cur; btn.textContent=cur; btn.classList.add('filled'); let rv=document.getElementById('rmInput').textContent, s1=document.getElementById('senInput1').textContent, s2=document.getElementById('senInput2').textContent; if(rv!='?'&&s1!='?'&&s2!='?'){ if(rv==c._rm&&(s1+s2)==c._sen){ document.getElementById('rmInput').classList.add('correct'); document.getElementById('senInput1').classList.add('correct'); document.getElementById('senInput2').classList.add('correct'); combineMoney(); } } }
+function combineMoney(){ let c=document.getElementById('mulColumnArea'); if(c._combined) return; c._combined=true; document.getElementById('mulCombineArea').innerHTML=`<div class="center"><button class="combined-btn">RM${c._aFixed}</button></div>`; document.getElementById('mulStep2').classList.remove('hidden'); }
+function addVisualMoney(){ let c=document.getElementById('mulColumnArea'); if(c._count>=c._b) return; c._count++; let box=document.getElementById('visualBox'); let chip=document.createElement('div'); chip.className='visual-chip'; chip.textContent='RM'+c._aFixed; box.appendChild(chip); document.getElementById('visualTotal').textContent=(c._a*c._count).toFixed(2); }
+function clearVisual(){ let c=document.getElementById('mulColumnArea'); c._count=0; document.getElementById('visualBox').innerHTML=''; document.getElementById('visualTotal').textContent='0.00'; }
+function checkVisualTotal(){ let c=document.getElementById('mulColumnArea'); if(c._count!=c._b) document.getElementById('mulColumnFeedback').textContent=`Need ${c._b}!`; else { document.getElementById('mulColumnFeedback').textContent=`🎉 RM${c._aFixed} × ${c._b}=RM${(c._a*c._b).toFixed(2)}!`; addCoins(5); addScore(25); } }
+let finalQs=[], finalIndex=0;
+function initFinalBoss(){ finalQs=[]; for(let i=0;i<30;i++){ let t=Math.random(); if(t<0.33){ let a=Math.round((Math.random()*80+10)*4)/4; let b=Math.round((Math.random()*40+5)*4)/4; let ans=+(a+b).toFixed(2); finalQs.push({a:a,b:b,ans:ans,op:'+',text:`Ali has RM${a.toFixed(2)}. Gets RM${b.toFixed(2)} more. Total? 💰`}); } else if(t<0.66){ let a=Math.round((Math.random()*90+20)*4)/4; let b=Math.round((Math.random()*35+2)*4)/4; if(b>=a) a=b+20; let ans=+(a-b).toFixed(2); finalQs.push({a:a,b:b,ans:ans,op:'-',text:`Siti has RM${a.toFixed(2)}. Spends RM${b.toFixed(2)}. Balance? 🛒`}); } else { let rm=Math.floor(Math.random()*5)+1; let sen=[0,10,20,25,30,50,60,75,80,90][Math.floor(Math.random()*10)]; let price=rm+sen/100; let qty=Math.floor(Math.random()*4)+2; let ans=+(price*qty).toFixed(2); finalQs.push({a:price,b:qty,ans:ans,op:'x',text:`Book RM${price.toFixed(2)} x ${qty}. Total? 📚`}); } } finalIndex=0; showFinalQ(); }
+function showFinalQ(){ let q=finalQs[finalIndex]; document.getElementById('finalQuestionText').textContent=`Q${finalIndex+1}/30: ${q.text}`; document.getElementById('finalFeedback').textContent=''; document.getElementById('bossWorkspace').classList.add('hidden'); document.getElementById('bossAddArea').innerHTML=''; document.getElementById('bossSubArea').innerHTML=''; document.getElementById('bossMulArea').innerHTML=''; let ansDiv=document.getElementById('finalAnswers'); ansDiv.innerHTML=''; let opts=[q.ans, +(q.ans+4.25).toFixed(2), +(q.ans-3.5).toFixed(2)].filter(x=>x>=0); opts=[...new Set(opts)].sort(()=>Math.random()-0.5); opts.forEach(o=>{ let b=document.createElement('button'); b.className='answer-btn'; b.textContent='RM'+o.toFixed(2); b.onclick=()=>checkFinal(o); ansDiv.appendChild(b); }); }
+function checkFinal(chosen){ let q=finalQs[finalIndex]; let fb=document.getElementById('finalFeedback'); if(Math.abs(chosen-q.ans)<0.01){ fb.textContent=`🎉 CORRECT! RM${q.ans.toFixed(2)} 👑`; addCoins(10); addScore(50); finalIndex++; setTimeout(showFinalQ,800); } else { fb.textContent=`💡 Try! Correct RM${q.ans.toFixed(2)}`; } }
+function nextFinalQuestion(){ finalIndex++; if(finalIndex>=finalQs.length) finalIndex=0; showFinalQ(); }
+function bossShowWorkspace(type){ document.getElementById('bossWorkspace').classList.remove('hidden'); document.getElementById('bossAddArea').innerHTML=''; document.getElementById('bossSubArea').innerHTML=''; document.getElementById('bossMulArea').innerHTML=''; if(type=='add') bossCreateAddWorkspace(); else if(type=='sub') bossCreateSubWorkspace(); else bossCreateMulWorkspace(); }
+function bossCreateAddWorkspace(){ let c=document.getElementById('bossAddArea'); c.innerHTML=`<div class="note-card" style="background:#fff8e8;padding:12px"><div style="display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">RM <input id="bAddA" class="boss-input" type="number" step="0.01" placeholder="2.50"> + RM <input id="bAddB" class="boss-input" type="number" step="0.01" placeholder="1.75"><button class="game-btn blue" onclick="bossRenderAdd()">CREATE COLUMN</button></div></div><div id="bAddColumn"></div>`; }
+function bossRenderAdd(){
+ let a=parseFloat(document.getElementById('bAddA').value); let b=parseFloat(document.getElementById('bAddB').value); if(isNaN(a)||isNaN(b)){ alert('Enter!'); return; }
+ let aF=a.toFixed(2), bF=b.toFixed(2); let len=Math.max(aF.length,bF.length); let aS=aF.padStart(len,' '), bS=bF.padStart(len,' '); let raw=[]; let carry=0;
+ for(let i=len-1;i>=0;i--){ if(aS[i]=='.'||bS[i]=='.'){ raw[i]='.'; continue; } if(aS[i]==' '&&bS[i]==' '){ raw[i]=' '; continue; } let da=(aS[i]!==' '&&aS[i]!=='.')?parseInt(aS[i])||0:0; let db=(bS[i]!==' '&&bS[i]!=='.')?parseInt(bS[i])||0:0; let s=da+db+carry; raw[i]=s; carry=Math.floor(s/10); }
+ let container=document.getElementById('bAddColumn'); let html=`<div class="column-area"><div class="carry-row">`; for(let i=0;i<len;i++) html+=`<div class="carry-box"><div class="carry-bubble" id="b-cbub-${i}"></div></div>`; html+=`</div><div class="num-row"><div class="operator"></div>`; for(let i=0;i<len;i++){ let ch=aS[i].trim(); if(ch=='') html+=`<div class="empty-box"></div>`; else if(ch=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${ch}</div>` } html+=`</div><div class="num-row"><div class="operator">+</div>`; for(let i=0;i<len;i++){ let ch=bS[i].trim(); if(ch=='') html+=`<div class="empty-box"></div>`; else if(ch=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${ch}</div>` } html+=`</div><div class="column-line"></div><div class="answer-row">`; for(let i=0;i<len;i++){ if(aS[i]==' '&&bS[i]==' ') html+=`<div class="empty-box"></div>`; else if(aS[i]=='.'||bS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<button class="digit-blank" id="b-ans-${i}" data-cur="-1" onclick="bossCycleAdd(${a},${b},${i},${len})">?</button>`; } html+=`</div></div>`; container.innerHTML=html; container._raw=raw;
+}
+function bossCycleAdd(a,b,col,len){ let c=document.getElementById('bAddColumn'); let raw=c._raw[col]; if(raw=='.'||raw==' ') return; let btn=document.getElementById(`b-ans-${col}`); let cur=parseInt(btn.dataset.cur); if(isNaN(cur)) cur=-1; cur++; if(cur>raw) cur=0; btn.dataset.cur=cur; btn.textContent=cur; btn.classList.add('filled'); if(cur==raw){ if(raw<10) btn.classList.add('correct'); else { btn.outerHTML=`<div class="split-wrap" id="b-split-${col}"><div class="tap-one-label">If you tap 1</div><button class="digit-blank filled" id="b-ans-${col}-carry" onclick="bossFlyCarry(${col})" style="background:#ffe066;">1</button><button class="digit-blank filled correct">${raw%10}</button></div>`; let bub=document.getElementById(`b-cbub-${col-1}`); if(bub){ bub.innerHTML=`<div class="carry-label">It will move here</div>1`; bub.classList.add('show'); } } } }
+function bossFlyCarry(col){ let c=document.getElementById('bAddColumn'); let target=document.getElementById(`b-cbub-${col-1}`); if(!target) return; let rect=document.getElementById(`b-ans-${col}-carry`).getBoundingClientRect(); let fly=document.createElement('div'); fly.className='fly'; fly.textContent='1'; fly.style.left=rect.left+'px'; fly.style.top=rect.top+'px'; document.body.appendChild(fly); let tRect=target.getBoundingClientRect(); setTimeout(()=>{ fly.style.left=tRect.left+'px'; fly.style.top=tRect.top+'px'; },50); setTimeout(()=>{ fly.remove(); target.innerHTML='1'; target.classList.add('show'); document.getElementById(`b-split-${col}`).innerHTML=`<button class="digit-blank filled correct" style="background:#83e6b5;">${c._raw[col]%10}</button>`; },600); }
+function bossCreateSubWorkspace(){ let c=document.getElementById('bossSubArea'); c.innerHTML=`<div class="note-card" style="background:#e8ffea;padding:12px"><div style="display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">RM <input id="bSubA" class="boss-input" type="number" step="0.01" placeholder="5.50"> - RM <input id="bSubB" class="boss-input" type="number" step="0.01" placeholder="2.25"><button class="game-btn green" onclick="bossRenderSub()">CREATE COLUMN</button></div></div><div id="bSubColumn"></div>`; }
+function bossRenderSub(){
+ let a=parseFloat(document.getElementById('bSubA').value); let b=parseFloat(document.getElementById('bSubB').value); if(isNaN(a)||isNaN(b)){ alert('Enter!'); return; } if(b>a){ alert('Top bigger!'); return; }
+ let aF=a.toFixed(2), bF=b.toFixed(2); let len=Math.max(aF.length,bF.length); let aS=aF.padStart(len,'0'), bS=bF.padStart(len,'0');
+ let container=document.getElementById('bSubColumn'); let html=`<div class="column-area"><div class="carry-row">`; for(let i=0;i<len;i++) html+=`<div class="carry-box" id="b-sub-carry-${i}"></div>`; html+=`</div><div class="num-row"><div class="operator"></div>`; for(let i=0;i<len;i++){ if(aS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit" id="b-top-${i}" onclick="bossTryBorrow(${a},${b},${i},${len})">${aS[i]}</div>`; } html+=`</div><div class="num-row"><div class="operator">-</div>`; for(let i=0;i<len;i++){ if(bS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<div class="num-digit">${bS[i]}</div>`; } html+=`</div><div class="column-line"></div><div class="answer-row">`; for(let i=0;i<len;i++){ if(aS[i]=='.') html+=`<div class="dot-box">.</div>`; else html+=`<button class="digit-blank" id="b-sub-ans-${i}" onclick="bossCycleSub(${a},${b},${i},${len})" data-val="-1">?</button>`; } html+=`</div></div>`; container.innerHTML=html; container._aStr=aS; container._aDigits=aS.split('').map(x=> x=='.'? -1 : parseInt(x)); container._bDigits=bS.split('').map(x=> x=='.'? -1 : parseInt(x));
+}
+function bossTryBorrow(a,b,col,len){
+ if(col>=len) return;
+ let container=document.getElementById('bSubColumn');
+ let aDigits=container._aDigits; let aStr=container._aStr;
+ if(aDigits[col]==-1) return;
+ let left=col-1; while(left>=0 && aStr[left]=='.') left--;
+ if(left<0) return;
+ let source=left;
+ while(source>=0){ if(aStr[source]=='.'){source--;continue;} if(aDigits[source]>0) break; source--; }
+ if(source<0) return;
+ if(!confirm(`Borrow 1 from ${aDigits[source]}? It will become ${aDigits[source]-1} and next +10! Borrow?`)) return;
+ aDigits[source]--; aDigits[col]+=10;
+ document.getElementById(`b-top-${source}`).textContent=aDigits[source];
+ document.getElementById(`b-top-${col}`).textContent=aDigits[col];
+ document.getElementById(`b-sub-carry-${source}`).textContent=`-1`;
+ for(let k=source+1;k<col;k++){ if(aStr[k]!='.') { if(aDigits[k]==0){ aDigits[k]=9; let el=document.getElementById(`b-top-${k}`); if(el) el.textContent=9; } } }
+ container._aDigits=aDigits;
+}
+function bossCycleSub(a,b,col,len){ let btn=document.getElementById(`b-sub-ans-${col}`); let c=document.getElementById('bSubColumn'); if(c._aDigits[col]==-1) return; let top=c._aDigits[col], bot=c._bDigits[col]; let cur=parseInt(btn.dataset.val); if(btn.textContent=='?') cur=top; else cur--; if(cur<0) cur=9; btn.dataset.val=cur; btn.textContent=cur; btn.classList.add('filled'); let exp=top-bot; if(exp<0) return; if(cur==exp) btn.classList.add('correct'); }
+function bossCreateMulWorkspace(){ let c=document.getElementById('bossMulArea'); c.innerHTML=`<div class="note-card" style="background:#f0e8ff;padding:12px"><div style="display:flex;gap:6px;justify-content:center;align-items:center;flex-wrap:wrap">RM <input id="bMulPrice" class="boss-input" type="number" step="0.01" placeholder="1.50"> x <input id="bMulQty" class="boss-input" type="number" placeholder="3"><button class="game-btn purple" onclick="bossRenderMul()">CREATE</button></div></div><div id="bMulColumn"></div>`; }
+function bossRenderMul(){ let price=parseFloat(document.getElementById('bMulPrice').value); let qty=parseInt(document.getElementById('bMulQty').value); if(isNaN(price)||isNaN(qty)){ alert('Enter!'); return; } let c=document.getElementById('bMulColumn'); let aF=price.toFixed(2); c._a=price; c._b=qty; c._aFixed=aF; c._count=0; c.innerHTML=`<div class="column-area"><div class="center"><h3>RM${aF} × ${qty}</h3><button class="game-btn green" onclick="bossAddVisual()">+ RM${aF}</button><div class="visual-dashed" id="b-visualBox"></div><h3>Total: RM<span id="b-visualTotal">0.00</span></h3></div></div>`; }
+function bossAddVisual(){ let c=document.getElementById('bMulColumn'); if(c._count>=c._b) return; c._count++; let box=document.getElementById('b-visualBox'); let chip=document.createElement('div'); chip.className='visual-chip'; chip.textContent='RM'+c._aFixed; box.appendChild(chip); document.getElementById('b-visualTotal').textContent=(c._a*c._count).toFixed(2); }
+showScreen('home');
+</script>
+</body>
+</html>
